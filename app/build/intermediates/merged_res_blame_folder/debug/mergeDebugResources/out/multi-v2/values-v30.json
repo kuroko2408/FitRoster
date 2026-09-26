@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.fitroster.workoutbuilder.app-mergeDebugResources-51:/values-v30/values-v30.xml",
+            "map": [
+                {
+                    "source": "/home/asta/.gradle/caches/9.3.0/transforms/87f04b3bfed9076d00c4a905b0bcf63a/transformed/material3-release/res/values-v30/values-v30.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "72",
+                        "endOffsets": "123"
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,7 @@
+#Sat Sep 26 16:39:38 IST 2026
+base.0=/home/asta/Documents/FitRoster/app/build/intermediates/dex/debugAndroidTest/mergeProjectDexDebugAndroidTest/0/classes.dex
+base.1=/home/asta/Documents/FitRoster/app/build/intermediates/dex/debugAndroidTest/mergeProjectDexDebugAndroidTest/11/classes.dex
+path.0=0/classes.dex
+path.1=11/classes.dex
+renamed.0=classes.dex
+renamed.1=classes2.dex
