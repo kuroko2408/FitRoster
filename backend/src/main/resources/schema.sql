@@ -50,3 +50,5 @@ CREATE TABLE meal_logs (
     calories DECIMAL(8,2) NOT NULL,
     logged_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+INSERT INTO users (id, name, email) values ('00000000-0000-0000-0000-000000000001','Test Coach','coach@test.com')
