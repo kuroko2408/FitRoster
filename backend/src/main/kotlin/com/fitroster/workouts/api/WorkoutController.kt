@@ -14,7 +14,6 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import org.springframework.http.HttpStatus
-import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -37,7 +36,6 @@ class WorkoutController(
     private val athleteWorkoutService: AthleteWorkoutService,
 ) {
     @PostMapping
-    @Transactional
     fun createWorkout(@Valid @RequestBody request: CreateWorkoutRequest): WorkoutResponse {
         return workouts.save(
             Workout(
@@ -49,21 +47,18 @@ class WorkoutController(
     }
 
     @GetMapping("/{workoutId}")
-    @Transactional(readOnly = true)
     fun getWorkout(@PathVariable workoutId: UUID): WorkoutResponse {
         val workout = findWorkout(workoutId)
         return workout.toResponse(sets.findAllByWorkoutIdOrderByDisplayOrderAsc(workoutId))
     }
 
     @GetMapping("/athlete/{athleteId}")
-    @Transactional(readOnly = true)
     fun getAthleteAgenda(@PathVariable athleteId: UUID): List<WorkoutResponse> =
         athleteWorkoutService.getAthleteWorkouts(athleteId).map { workout ->
             workout.toResponse(workout.sets.sortedBy { it.displayOrder })
         }
 
     @PostMapping("/{workoutId}/sets")
-    @Transactional
     fun addSets(
         @PathVariable workoutId: UUID,
         @Valid @RequestBody request: AddSetsRequest,
@@ -92,7 +87,6 @@ class WorkoutController(
     }
 
     @PatchMapping("/{workoutId}/sets/{setId}/targets")
-    @Transactional
     fun updateTargets(
         @PathVariable workoutId: UUID,
         @PathVariable setId: UUID,

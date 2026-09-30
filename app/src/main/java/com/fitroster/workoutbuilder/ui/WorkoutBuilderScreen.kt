@@ -27,6 +27,7 @@ import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.DragIndicator
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material.icons.rounded.MoreHoriz
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -34,6 +35,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -49,6 +52,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -73,13 +77,31 @@ private val Mint = Color(0xFFE8F3EC)
 fun WorkoutBuilderScreen(viewModel: WorkoutBuilderViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
+    var moreMenuExpanded by remember { mutableStateOf(false) }
+    var exerciseMenuExpanded by remember { mutableStateOf(false) }
     Scaffold(
         containerColor = Canvas,
         topBar = {
             TopAppBar(
                 title = { Column { Text("Workout builder", fontWeight = FontWeight.Bold, fontSize = 19.sp); Text("PROGRAM DESIGN", color = Muted, fontSize = 10.sp, letterSpacing = 1.6.sp) } },
                 navigationIcon = { IconButton(onClick = {}) { Icon(Icons.Rounded.ArrowBack, "Back", tint = Ink) } },
-                actions = { IconButton(onClick = {}) { Icon(Icons.Rounded.MoreHoriz, "More options", tint = Ink) } },
+                actions = {
+                    Box {
+                        IconButton(onClick = { moreMenuExpanded = true }) {
+                            Icon(Icons.Rounded.MoreVert, contentDescription = "More options", tint = Ink)
+                        }
+                        DropdownMenu(expanded = moreMenuExpanded, onDismissRequest = { moreMenuExpanded = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Save workout") },
+                                onClick = { moreMenuExpanded = false; viewModel.save() },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Start new workout") },
+                                onClick = { moreMenuExpanded = false; viewModel.startNewWorkout() },
+                            )
+                        }
+                    }
+                },
             )
         },
         bottomBar = {
@@ -139,7 +161,20 @@ fun WorkoutBuilderScreen(viewModel: WorkoutBuilderViewModel) {
                                 }
                                 Spacer(Modifier.width(11.dp))
                                 Column(Modifier.weight(1f)) { Text("Barbell squat", color = Ink, fontWeight = FontWeight.SemiBold); Text("QUADRICEPS · GLUTES", color = Muted, fontSize = 10.sp, letterSpacing = 1.sp) }
-                                IconButton(onClick = {}) { Icon(Icons.Rounded.MoreHoriz, "Exercise options", tint = Muted) }
+                                Box {
+                                    IconButton(onClick = { exerciseMenuExpanded = true }) {
+                                        Icon(Icons.Rounded.MoreHoriz, "Exercise options", tint = Muted)
+                                    }
+                                    DropdownMenu(
+                                        expanded = exerciseMenuExpanded,
+                                        onDismissRequest = { exerciseMenuExpanded = false },
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("Add set") },
+                                            onClick = { exerciseMenuExpanded = false; viewModel.addSet() },
+                                        )
+                                    }
+                                }
                             }
                             Spacer(Modifier.height(14.dp))
                             Row(Modifier.fillMaxWidth().padding(horizontal = 3.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -150,6 +185,31 @@ fun WorkoutBuilderScreen(viewModel: WorkoutBuilderViewModel) {
                                 Spacer(Modifier.width(42.dp))
                             }
                             Spacer(Modifier.height(6.dp))
+                        }
+                    }
+                }
+            }
+            if (state.savedWorkouts.isNotEmpty()) {
+                item(key = "saved-workouts-heading") {
+                    Text("Saved workouts", color = Ink, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                }
+                state.savedWorkouts.forEach { workout ->
+                    item(key = "saved-workout-${workout.id}") {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(15.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                        ) {
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 13.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(workout.name, color = Ink, fontWeight = FontWeight.SemiBold)
+                                    Text("${workout.sets.size} sets", color = Muted, fontSize = 12.sp)
+                                }
+                                Text(workout.createdAt?.take(10) ?: "Saved", color = Green, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                            }
                         }
                     }
                 }
@@ -215,11 +275,11 @@ private fun SetRow(row: BuilderSet, onReps: (String) -> Unit, onWeight: (String)
                 Box(contentAlignment = Alignment.Center) { Text("${row.setNumber}", color = Green, fontWeight = FontWeight.Bold, fontSize = 13.sp) }
             }
             Spacer(Modifier.width(8.dp))
-            NumberField(row.reps, onReps, Modifier.weight(1f))
+            NumberField(row.reps, onReps, Modifier.weight(1f), allowDecimal = false)
             Spacer(Modifier.width(6.dp))
             NumberField(row.weight, onWeight, Modifier.weight(1f))
             Spacer(Modifier.width(6.dp))
-            NumberField(row.rpe, onRpe, Modifier.weight(1f))
+            NumberField(row.rpe, onRpe, Modifier.weight(1f), allowDecimal = false)
             IconButton(onClick = onDelete, modifier = Modifier.width(38.dp)) {
                 Icon(Icons.Rounded.DeleteOutline, "Remove set", tint = Muted, modifier = Modifier.size(20.dp))
             }
@@ -228,13 +288,15 @@ private fun SetRow(row: BuilderSet, onReps: (String) -> Unit, onWeight: (String)
 }
 
 @Composable
-private fun NumberField(value: String, onChange: (String) -> Unit, modifier: Modifier) {
+private fun NumberField(value: String, onChange: (String) -> Unit, modifier: Modifier, allowDecimal: Boolean = true) {
     OutlinedTextField(
         value = value,
-        onValueChange = { input -> if (input.length <= 6 && input.all { it.isDigit() || it == '.' }) onChange(input) },
+        onValueChange = { input ->
+            if (input.length <= 6 && input.all { it.isDigit() || (allowDecimal && it == '.') }) onChange(input)
+        },
         modifier = modifier.height(52.dp),
         singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        keyboardOptions = KeyboardOptions(keyboardType = if (allowDecimal) KeyboardType.Decimal else KeyboardType.Number),
         shape = RoundedCornerShape(10.dp),
         textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
     )

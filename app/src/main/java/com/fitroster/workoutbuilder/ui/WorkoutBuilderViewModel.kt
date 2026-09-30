@@ -7,6 +7,7 @@ import com.fitroster.workoutbuilder.data.CreateWorkoutRequest
 import com.fitroster.workoutbuilder.data.SetInput
 import com.fitroster.workoutbuilder.data.UpdateTargetsRequest
 import com.fitroster.workoutbuilder.data.WorkoutApi
+import com.fitroster.workoutbuilder.data.WorkoutDto
 import com.fitroster.workoutbuilder.data.WorkoutSetDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +21,7 @@ data class BuilderSet(
     val setNumber: Int = 1,
     val reps: String = "8",
     val weight: String = "60",
-    val rpe: String = "7.5",
+    val rpe: String = "8",
     val serverId: String? = null,
 )
 
@@ -30,6 +31,7 @@ data class WorkoutBuilderUiState(
         BuilderSet(setNumber = 1), BuilderSet(setNumber = 2), BuilderSet(setNumber = 3),
     ),
     val workoutId: String? = null,
+    val savedWorkouts: List<WorkoutDto> = emptyList(),
     val isSaving: Boolean = false,
     val message: String? = null,
 )
@@ -42,6 +44,14 @@ class WorkoutBuilderViewModel(
     val uiState = _uiState.asStateFlow()
 
     fun updateName(value: String) = _uiState.update { it.copy(workoutName = value) }
+    fun startNewWorkout() = _uiState.update {
+        it.copy(
+            workoutName = "New workout",
+            sets = listOf(BuilderSet(setNumber = 1)),
+            workoutId = null,
+            message = null,
+        )
+    }
     fun updateSet(id: String, reps: String? = null, weight: String? = null, rpe: String? = null) = _uiState.update { state ->
         state.copy(sets = state.sets.map { row -> if (row.id == id) row.copy(reps = reps ?: row.reps, weight = weight ?: row.weight, rpe = rpe ?: row.rpe) else row })
     }
@@ -61,12 +71,32 @@ class WorkoutBuilderViewModel(
 
     fun save() {
         if (_uiState.value.isSaving) return
+        val draft = _uiState.value
+        val invalidSet = draft.sets.firstOrNull { row ->
+            val reps = row.reps.toIntOrNull()
+            val weight = row.weight.takeIf { it.isNotBlank() }?.toDoubleOrNull()
+            val rpe = row.rpe.takeIf { it.isNotBlank() }?.toIntOrNull()
+            reps == null || reps < 1 ||
+                (row.weight.isNotBlank() && (weight == null || weight < 0.0)) ||
+                (row.rpe.isNotBlank() && (rpe == null || rpe !in 0..10))
+        }
+        if (invalidSet != null) {
+            _uiState.update { it.copy(message = "Enter whole-number reps and an integer RPE from 0 to 10. Weight must be non-negative.") }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, message = null) }
             try {
                 var workoutId = _uiState.value.workoutId
                 if (workoutId == null) {
-                    val created = api.createWorkout(CreateWorkoutRequest(coachId = coachId, name = _uiState.value.workoutName.trim()))
+                    val created = api.createWorkout(
+                        CreateWorkoutRequest(
+                            coachId = coachId,
+                            athleteId = "00000000-0000-0000-0000-000000000002", // Passing our dummy athlete ID!
+                            name = _uiState.value.workoutName.trim()
+                        )
+                    )
                     workoutId = created.id
                     _uiState.update { it.copy(workoutId = workoutId) }
                 }
@@ -74,15 +104,29 @@ class WorkoutBuilderViewModel(
                 val pending = state.sets.filter { it.serverId == null }
                 if (pending.isNotEmpty()) {
                     val result = api.addSets(workoutId!!, AddSetsRequest(pending.mapIndexed { index, row ->
-                        SetInput(row.exerciseName, index, row.setNumber, row.reps.toIntOrNull(), row.weight.toDoubleOrNull(), row.rpe.toDoubleOrNull())
+                        SetInput(
+                            exerciseName = row.exerciseName,
+                            position = index,
+                            setNumber = row.setNumber,
+                            targetReps = row.reps.toInt(),
+                            targetWeight = row.weight.toDoubleOrNull(),
+                            targetRpe = row.rpe.toIntOrNull(),
+                        )
                     }))
                     applyServerSets(result.sets)
                 }
                 val current = _uiState.value
                 current.sets.filter { it.serverId != null }.forEach { row ->
-                    api.updateTargets(workoutId!!, row.serverId!!, UpdateTargetsRequest(row.weight.toDoubleOrNull(), row.rpe.toDoubleOrNull()))
+                    api.updateTargets(workoutId!!, row.serverId!!, UpdateTargetsRequest(row.weight.toDoubleOrNull(), row.rpe.toIntOrNull()))
                 }
-                _uiState.update { it.copy(isSaving = false, message = "Workout saved") }
+                val refreshedWorkout = api.getWorkout(workoutId!!)
+                _uiState.update { current ->
+                    current.copy(
+                        savedWorkouts = (current.savedWorkouts.filterNot { it.id == refreshedWorkout.id } + refreshedWorkout),
+                        isSaving = false,
+                        message = "Workout saved",
+                    )
+                }
             } catch (error: Exception) {
                 _uiState.update { it.copy(isSaving = false, message = error.message ?: "Could not save workout") }
             }

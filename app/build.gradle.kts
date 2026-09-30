@@ -14,7 +14,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-        buildConfigField("String", "API_BASE_URL", "\"http://10.215.187.160:8080/\"")
+        buildConfigField("String", "API_BASE_URL", "\"http://192.168.0.106:8080/\"")
     }
 
     buildFeatures { compose = true; buildConfig = true }

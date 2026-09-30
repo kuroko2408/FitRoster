@@ -24,7 +24,7 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -42,7 +42,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,7 +51,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 
 private val LoggerBackground = Color(0xFFF4F7F4)
@@ -65,7 +63,7 @@ private val TimerAlertInk = Color(0xFFB54725)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GymLoggerScreen(viewModel: GymLoggerViewModel = viewModel()) {
+fun GymLoggerScreen(viewModel: GymLoggerViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var remainingSeconds by rememberSaveable { mutableIntStateOf(0) }
     var savedTimerToken by rememberSaveable { mutableIntStateOf(0) }
@@ -92,12 +90,17 @@ fun GymLoggerScreen(viewModel: GymLoggerViewModel = viewModel()) {
             TopAppBar(
                 title = {
                     Column {
-                        Text("Today's session", color = LoggerInk, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text("Today's sessions", color = LoggerInk, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         Text("ATHLETE WORKOUT", color = LoggerMuted, fontSize = 10.sp, letterSpacing = 1.5.sp)
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = {}) { Icon(Icons.Rounded.ArrowBack, contentDescription = "Back", tint = LoggerInk) }
+                },
+                actions = {
+                    IconButton(onClick = viewModel::refreshWorkouts) {
+                        Icon(Icons.Rounded.Refresh, contentDescription = "Refresh workouts", tint = LoggerGreen)
+                    }
                 },
             )
         },
@@ -117,9 +120,22 @@ fun GymLoggerScreen(viewModel: GymLoggerViewModel = viewModel()) {
                         color = LoggerGreen,
                         trackColor = Color(0xFFE0E7E1),
                     )
-                    Text(state.workoutTitle, modifier = Modifier.padding(top = 19.dp), color = LoggerInk, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    Text("LOWER BODY · 45–55 MIN", modifier = Modifier.padding(top = 4.dp), color = LoggerMuted, fontSize = 10.sp, letterSpacing = 1.2.sp)
+                    Text("Assigned training", modifier = Modifier.padding(top = 19.dp), color = LoggerInk, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                 }
+            }
+
+            if (state.isLoading) {
+                item {
+                    Row(Modifier.fillMaxWidth().padding(vertical = 20.dp), horizontalArrangement = Arrangement.Center) {
+                        CircularProgressIndicator(color = LoggerGreen)
+                    }
+                }
+            }
+            state.errorMessage?.let { error ->
+                item { Text(error, color = Color(0xFFB3261E), fontSize = 13.sp) }
+            }
+            if (!state.isLoading && state.workouts.isEmpty() && state.errorMessage == null) {
+                item { Text("No assigned workouts for this athlete.", color = LoggerMuted, fontSize = 13.sp) }
             }
 
             if (savedTimerToken > 0) {
@@ -127,17 +143,20 @@ fun GymLoggerScreen(viewModel: GymLoggerViewModel = viewModel()) {
             }
 
             var flattenedIndex = 0
-            state.exercises.forEach { exercise ->
-                val exerciseStartIndex = flattenedIndex
-                flattenedIndex += exercise.sets.size
-                item(key = "exercise-${exercise.id}") { ExerciseHeading(exercise) }
-                itemsIndexed(exercise.sets, key = { _, set -> set.id }) { index, set ->
-                    val absoluteIndex = exerciseStartIndex + index
-                    SetChecklistRow(
-                        set = set,
-                        isActive = absoluteIndex == state.activeSetIndex,
-                        onToggle = { viewModel.completeSet(set.id) },
-                    )
+            state.workouts.forEach { workout ->
+                item(key = "workout-${workout.id}") { WorkoutHeading(workout) }
+                workout.exercises.forEach { exercise ->
+                    val exerciseStartIndex = flattenedIndex
+                    flattenedIndex += exercise.sets.size
+                    item(key = "exercise-${exercise.id}") { ExerciseHeading(exercise) }
+                    itemsIndexed(exercise.sets, key = { _, set -> set.id }) { index, set ->
+                        val absoluteIndex = exerciseStartIndex + index
+                        SetChecklistRow(
+                            set = set,
+                            isActive = absoluteIndex == state.activeSetIndex,
+                            onToggle = { viewModel.completeSet(set.id) },
+                        )
+                    }
                 }
             }
 
@@ -160,6 +179,22 @@ fun GymLoggerScreen(viewModel: GymLoggerViewModel = viewModel()) {
 }
 
 @Composable
+private fun WorkoutHeading(workout: LoggerWorkout) {
+    Row(
+        Modifier.fillMaxWidth().padding(top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(workout.title, color = LoggerInk, fontWeight = FontWeight.Bold, fontSize = 19.sp)
+            Text(workout.scheduledDate ?: "Assigned workout", color = LoggerMuted, fontSize = 11.sp)
+        }
+        val done = workout.exercises.sumOf { exercise -> exercise.sets.count { it.isComplete } }
+        val total = workout.exercises.sumOf { it.sets.size }
+        Text("$done/$total", color = LoggerGreen, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+    }
+}
+
+@Composable
 private fun ExerciseHeading(exercise: LoggerExercise) {
     Row(Modifier.fillMaxWidth().padding(top = 5.dp, bottom = 0.dp), verticalAlignment = Alignment.CenterVertically) {
         Surface(color = LoggerMint, shape = RoundedCornerShape(11.dp), modifier = Modifier.size(40.dp)) {
@@ -168,7 +203,9 @@ private fun ExerciseHeading(exercise: LoggerExercise) {
         Spacer(Modifier.width(11.dp))
         Column {
             Text(exercise.name, color = LoggerInk, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            Text(exercise.muscleGroup, color = LoggerMuted, fontSize = 9.sp, letterSpacing = 1.sp)
+            if (exercise.muscleGroup.isNotBlank()) {
+                Text(exercise.muscleGroup, color = LoggerMuted, fontSize = 9.sp, letterSpacing = 1.sp)
+            }
         }
     }
 }
@@ -203,7 +240,7 @@ private fun SetChecklistRow(set: LoggerSet, isActive: Boolean, onToggle: () -> U
                 Text("${set.reps} reps", color = LoggerMuted, fontSize = 12.sp)
             }
             Surface(color = Color.White.copy(alpha = .8f), shape = RoundedCornerShape(10.dp)) {
-                Text("${set.targetWeightKg} kg", color = LoggerInk, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+                Text("${set.targetWeightKg.pretty()} kg", color = LoggerInk, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
             }
             Spacer(Modifier.width(10.dp))
             Text(if (set.isComplete) "DONE" else "CHECK", color = if (set.isComplete) LoggerGreen else LoggerMuted, fontWeight = FontWeight.Bold, fontSize = 9.sp, letterSpacing = .6.sp)
@@ -246,3 +283,5 @@ private fun formatTime(totalSeconds: Int): String {
     val seconds = totalSeconds % 60
     return "%d:%02d".format(minutes, seconds)
 }
+
+private fun Double.pretty(): String = if (this % 1.0 == 0.0) toInt().toString() else "%.1f".format(this)

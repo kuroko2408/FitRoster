@@ -1,0 +1,17 @@
+<component name="libraryTable">
+  <library name="Gradle: androidx.compose.ui:ui-android:1.7.4@aar" external-system-id="GRADLE">
+    <ANNOTATIONS>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/9.3.0/transforms/cb34a6eb5fd284272b7180886322a5f9/transformed/ui-release/annotations.zip!/" />
+    </ANNOTATIONS>
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/../.gradle/caches/9.3.0/transforms/cb34a6eb5fd284272b7180886322a5f9/transformed/ui-release/AndroidManifest.xml" />
+      <root url="file://$PROJECT_DIR$/../.gradle/caches/9.3.0/transforms/cb34a6eb5fd284272b7180886322a5f9/transformed/ui-release/res" />
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/9.3.0/transforms/cb34a6eb5fd284272b7180886322a5f9/transformed/ui-release/jars/classes.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/androidx.compose.ui/ui-android/1.7.4/107622106c58703f379152967aa81cc368b4e61d/ui-android-1.7.4-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/androidx.compose.ui/ui-android/1.7.4/28bcf1977e634610892bc9334bcef44c0d644099/ui-1.7.4-samples-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

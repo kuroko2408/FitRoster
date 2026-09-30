@@ -49,6 +49,7 @@ import com.fitroster.workoutbuilder.ui.ComplianceViewModel
 import com.fitroster.workoutbuilder.ui.FoodLoggingScreen
 import com.fitroster.workoutbuilder.ui.MacroAllocatorScreen
 import com.fitroster.workoutbuilder.ui.GymLoggerScreen
+import com.fitroster.workoutbuilder.ui.GymLoggerViewModel
 import com.fitroster.workoutbuilder.ui.WorkoutBuilderScreen
 import com.fitroster.workoutbuilder.ui.WorkoutBuilderViewModel
 
@@ -99,7 +100,10 @@ fun FitRosterNavHost(
                 DashboardSwitch(listOf("Workout", "Food & macros"), athleteTab) { athleteTab = it }
                 Box(Modifier.weight(1f)) {
                     when (athleteTab) {
-                        0 -> GymLoggerScreen()
+                        0 -> {
+                            val vm: GymLoggerViewModel = viewModel(factory = GymLoggerFactory(workoutApi, athleteId))
+                            GymLoggerScreen(vm)
+                        }
                         else -> {
                             val vm: AthleteNutritionViewModel = viewModel(factory = AthleteNutritionFactory(nutritionApi, athleteId))
                             FoodLoggingScreen(vm)
@@ -144,6 +148,17 @@ private class ComplianceFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         require(modelClass.isAssignableFrom(ComplianceViewModel::class.java))
         return ComplianceViewModel(workoutApi, nutritionApi, athleteId) as T
+    }
+}
+
+private class GymLoggerFactory(
+    private val workoutApi: WorkoutApi,
+    private val athleteId: String,
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        require(modelClass.isAssignableFrom(GymLoggerViewModel::class.java))
+        return GymLoggerViewModel(workoutApi, athleteId) as T
     }
 }
 

@@ -173,7 +173,7 @@ private fun WorkoutExecutionCard(workout: WorkoutDto) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(workout.name, color = ComplianceInk, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Text(workout.scheduledDate ?: workout.createdAt?.take(10) ?: "Scheduled workout", color = ComplianceMuted, fontSize = 11.sp, modifier = Modifier.padding(top = 3.dp))
+                    Text(workout.createdAt?.take(10) ?: "Scheduled workout", color = ComplianceMuted, fontSize = 11.sp, modifier = Modifier.padding(top = 3.dp))
                 }
                 val completed = workout.sets.count { it.isCompleted }
                 Text("$completed/${workout.sets.size}", color = ComplianceGreen, fontWeight = FontWeight.Bold, fontSize = 12.sp)
