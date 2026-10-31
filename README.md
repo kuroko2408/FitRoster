@@ -22,7 +22,7 @@ The backend is fully containerized. You do not need to install PostgreSQL locall
 
 ### 1. Clone the Repository
 ```bash
-git clone [https://github.com/YOUR_GITHUB_USERNAME/FitRoster.git](https://github.com/YOUR_GITHUB_USERNAME/FitRoster.git)
+git clone [https://github.com/kuroko2408/FitRoster.git](https://github.com/kuroko2408/FitRoster.git)
 cd FitRoster/backend
 2. Build the Application
 Before spinning up the containers, build the Spring Boot .jar file.
