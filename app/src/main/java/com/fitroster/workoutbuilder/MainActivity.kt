@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -51,6 +52,7 @@ private class WorkoutBuilderViewModelFactory(
         return WorkoutBuilderViewModel(api, coachId) as T
     }
 }
+
 
 @Composable
 private fun FitRosterTheme(content: @Composable () -> Unit) {
